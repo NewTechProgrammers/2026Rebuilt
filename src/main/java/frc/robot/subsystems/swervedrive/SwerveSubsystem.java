@@ -2,10 +2,15 @@ package frc.robot.subsystems.swervedrive;
 
 import static edu.wpi.first.units.Units.Meter;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.PathfindingCommand;
 import com.pathplanner.lib.config.PIDConstants;
@@ -20,8 +25,10 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Config;
 
@@ -35,6 +42,7 @@ import edu.wpi.first.math.util.Units;
 
 public class SwerveSubsystem extends SubsystemBase {
     private final SwerveDrive swerveDrive;
+    private List<Pose2d> targetPoses = new ArrayList<>();
 
     /**
      * Initialize {@link SwerveDrive} with the directory provided.
@@ -58,6 +66,7 @@ public class SwerveSubsystem extends SubsystemBase {
         swerveDrive.pushOffsetsToEncoders();
 
         setupPathPlanner();
+        loadShootPoints();
     }
 
     /**
@@ -72,6 +81,7 @@ public class SwerveSubsystem extends SubsystemBase {
                 Constants.MAX_SPEED,
                 new Pose2d(new Translation2d(Meter.of(2), Meter.of(0)),
                         Rotation2d.fromDegrees(0)));
+        loadShootPoints();
     }
 
     public void setupPathPlanner()
@@ -321,6 +331,61 @@ public class SwerveSubsystem extends SubsystemBase {
             pose,
             constraints,
             edu.wpi.first.units.Units.MetersPerSecond.of(0) // Goal end velocity in meters/sec
-                                        );
+                                      );
+    }
+
+    public Command driveToClosestPose() {
+        return Commands.defer(() -> {
+            Pose2d target = getClosestShootPose();
+            return driveToPose(target);
+        }, Set.of(this));
+    }
+
+    private void loadShootPoints() {
+        try {
+            File file = new File(Filesystem.getDeployDirectory(), "ShootPoints.json");
+            ObjectMapper mapper = new ObjectMapper();
+            ShootData data = mapper.readValue(file, ShootData.class);
+
+            targetPoses.clear();
+            if (data.shootPoints != null) {
+                for (PointData p : data.shootPoints) {
+                    targetPoses.add(new Pose2d(p.x, p.y, Rotation2d.fromDegrees(p.z)));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private Pose2d getClosestShootPose() {
+        Pose2d currentPose = swerveDrive.getPose();
+
+        if (targetPoses.isEmpty()) {
+            return currentPose;
+        }
+
+        Pose2d closestPose = null;
+        double minDistance = Double.MAX_VALUE;
+
+        for (Pose2d target : targetPoses) {
+            double distance = currentPose.getTranslation().getDistance(target.getTranslation());
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestPose = target;
+            }
+        }
+        return closestPose;
+    }
+
+    public static class ShootData {
+        @JsonProperty("shootPoints")
+        public List<PointData> shootPoints;
+    }
+
+    public static class PointData {
+        public double x;
+        public double y;
+        public double z;
     }
 }
