@@ -50,6 +50,7 @@ public final class Constants {
     // We will have to change these later
     public static final int kIntakeDropSparkMaxPort = 98;
     public static final double kPercentOutputIntakeDrop = 0.30;
+    public static final int kBottomIntakeDropLimitSwitchPort = 67;
   }
 
   public static final class AutoConstants {
