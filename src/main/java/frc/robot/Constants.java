@@ -42,9 +42,9 @@ public final class Constants {
 
   public static final class ShootingConstants {
     // We will need to change these later
-    public static final int kSortingSparkMaxPort = 77;
-    public static final int kPassthroughSparkMaxPort = 78;
-    public static final int kShooterSparkMaxPort = 79;
+    public static final int kSortingSparkMaxPort = 12;
+    public static final int kPassthroughSparkMaxPort = 11;
+    public static final int kShooterSparkMaxPort = 9;
     
     // We will need to change these later
     public static final double kPercentOutputSorting = 0.30;
