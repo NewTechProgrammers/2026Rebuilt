@@ -51,6 +51,7 @@ public final class Constants {
     public static final int kIntakeDropSparkMaxPort = 98;
     public static final double kPercentOutputIntakeDrop = 0.30;
     public static final int kBottomIntakeDropLimitSwitchPort = 67;
+  }
   public static final class ShootingConstants {
     // We will need to change these later
     public static final int kSortingSparkMaxPort = 12;
