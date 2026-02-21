@@ -52,19 +52,24 @@ public class Shooting extends SubsystemBase {
         sortingMotor.set(0);
         passthroughMotor.set(0);
 
-        // Slow down the motor slowly
-        // Log the value of shooter motor
+        // Slow down the motor slowly & Log the value of shooter motor
         System.out.println("Shooter motor value: " + shooterMotor.get());
 
-        while (shooterMotor.get() < 0) {
-            shooterMotor.set(shooterMotor.get() + 0.01);
-            // Wait
-            try {
-                Thread.sleep(50); // Sleep for 50 milliseconds
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt(); // Restore interrupted status
+        Runnable slowDown = () -> {
+            while (shooterMotor.get() < 0) {
+                shooterMotor.set(shooterMotor.get() + 0.01);
+                // Wait
+                try {
+                    Thread.sleep(50); // Sleep for 50 milliseconds
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt(); // Restore interrupted status
+                }
             }
-        }
-        shooterMotor.set(0);
+            shooterMotor.set(0);
+        };
+
+        // Slow down the motor in a separate thread to avoid blocking the main thread
+        Thread showThread = new Thread(slowDown);
+        showThread.start();
     }
 }
