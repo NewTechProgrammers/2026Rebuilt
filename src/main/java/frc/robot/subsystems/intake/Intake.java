@@ -24,7 +24,7 @@ public class Intake extends SubsystemBase {
     }
 
     public void start() {
-        // Slow down the motor slowly & Log the value of shooter motor
+        // Speed up the motor slowly & Log the value of shooter motor
         System.out.println("Intake motor value: " + intakeMotor.get());
 
         Runnable speedUp = () -> {
@@ -40,7 +40,7 @@ public class Intake extends SubsystemBase {
             intakeMotor.set(IntakeConstants.kPercentOutputIntake);
         };
 
-        // Slow down the motor in a separate thread to avoid blocking the main thread
+        // Speed up the motor in a separate thread to avoid blocking the main thread
         Thread speedUpThread = new Thread(speedUp);
         speedUpThread.start();
     }
