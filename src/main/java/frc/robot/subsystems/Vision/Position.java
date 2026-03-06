@@ -1,7 +1,5 @@
 package frc.robot.subsystems.Vision;
 
-import com.ctre.phoenix6.hardware.Pigeon2;
-
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import frc.robot.LimelightHelpers;
