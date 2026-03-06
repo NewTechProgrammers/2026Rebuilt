@@ -60,7 +60,7 @@ public final class Constants {
     // We will need to change these later
     public static final double kPercentOutputSorting = -0.20;
     public static final double kPercentOutputPassthrough = -0.45;
-    public static final double kPercentOutputShooter = -0.55;
+    public static final double kPercentOutputShooter = -0.65;
   }
 
   public static final class AutoConstants {
