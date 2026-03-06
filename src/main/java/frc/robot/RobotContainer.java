@@ -17,6 +17,7 @@ import frc.robot.commands_timed.modules.intake.*;
 import frc.robot.commands_timed.modules.shooting.*;
 
 import frc.robot.commands.modules.intake.IntakeOnCommand;
+import frc.robot.commands.modules.intake.IntakeDropCloseCommand;
 import frc.robot.commands.modules.intake.IntakeDropCommand;
 import frc.robot.commands.modules.intake.IntakeReverseCommand;
 import frc.robot.commands.modules.shooting.Shoot;
