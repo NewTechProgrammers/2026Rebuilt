@@ -17,6 +17,7 @@ import frc.robot.commands_timed.modules.intake.*;
 import frc.robot.commands_timed.modules.shooting.*;
 
 import frc.robot.commands.modules.intake.IntakeOnCommand;
+import frc.robot.commands.modules.intake.IntakeDropCloseCommand;
 import frc.robot.commands.modules.intake.IntakeDropCommand;
 import frc.robot.commands.modules.intake.IntakeReverseCommand;
 import frc.robot.commands.modules.shooting.Shoot;
@@ -140,6 +141,7 @@ public class RobotContainer {
 
                 // Shooting command
                 driverXbox.b().whileTrue(new Shoot(shooting));
+                driverXbox.povLeft().whileTrue(new IntakeDropCloseCommand(intakeDrop));
 
                 // Shooting commands without shooting (pov = dpad btw)
                 driverXbox.povUp().whileTrue(new SortAndPass(shooting));

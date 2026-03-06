@@ -281,8 +281,6 @@ public class SwerveSubsystem extends SubsystemBase {
      */
     public Pose2d getPose()
     {
-        SmartDashboard.putNumber("X:", swerveDrive.getPose().getX());
-        SmartDashboard.putNumber("Y:", swerveDrive.getPose().getY());
         return swerveDrive.getPose();
     }
 

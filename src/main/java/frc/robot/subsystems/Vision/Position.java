@@ -5,6 +5,7 @@ import com.ctre.phoenix6.hardware.Pigeon2;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import frc.robot.LimelightHelpers;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import swervelib.SwerveDrive;
@@ -16,33 +17,60 @@ public class Position extends SubsystemBase {
     public static boolean doRejectUpdate = false;
     public static boolean twoTags = false;
 
-    private final Pigeon2 m_gyro = new Pigeon2(20);
-
     public Position(SwerveDrive swerveDrive) {
         this.swerveDrive = swerveDrive;
     }
 
 public void updateOdometryWithVision() {
+swerveDrive.updateOdometry();
 
-    // Aktualizacja czystej odometrii
-    swerveDrive.updateOdometry();
+    // Set heading in Limelight
+    double yaw = swerveDrive.getYaw().getDegrees();
+    LimelightHelpers.SetRobotOrientation("limelight", yaw, 0, 0, 0, 0, 0);
 
-        // ustawienie headingu w Limelight
-        LimelightHelpers.SetRobotOrientation(
-            "limelight",
-            m_gyro.getYaw().getValueAsDouble(), 
-            0, 0, 0, 0, 0
-        );
-        
+    // Log current yaw
+    SmartDashboard.putNumber("Vision/Gyro Yaw", yaw);
 
-        // odczyt MegaTag2
-        LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2("limelight");
+    // Read MegaTag2
+    LimelightHelpers.PoseEstimate mt2 =
+        LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2("limelight");
 
-        // odrzucenie błędnych pomiarów
-        if (Math.abs(m_gyro.getYaw().getValueAsDouble()) > 720 || mt2.tagCount == 0) return;
+    // Log Limelight data
+    boolean hasValidTags = mt2 != null && mt2.tagCount > 0;
+    SmartDashboard.putBoolean("Vision/Has Valid Tags", hasValidTags);
+    SmartDashboard.putNumber("Vision/Tag Count", mt2 != null ? mt2.tagCount : 0);
 
-        // dodanie danych vision
-        swerveDrive.setVisionMeasurementStdDevs(VecBuilder.fill(.7, .7, 9999999));
-        swerveDrive.addVisionMeasurement(mt2.pose, mt2.timestampSeconds);
+    // Reject invalid measurements
+    if (Math.abs(yaw) > 720) {
+        DriverStation.reportWarning("[Vision] Measurement rejected – yaw out of range: " + yaw, false);
+        SmartDashboard.putString("Vision/Reject Reason", "Yaw > 720°");
+        SmartDashboard.putBoolean("Vision/Measurement Applied", false);
+        return;
     }
+
+    if (mt2 == null || mt2.tagCount == 0) {
+        SmartDashboard.putString("Vision/Reject Reason", "No tags");
+        SmartDashboard.putBoolean("Vision/Measurement Applied", false);
+        return;
+    }
+
+    // Log pose before applying
+    Pose2d estimatedPose = mt2.pose;
+    SmartDashboard.putNumber("Vision/Pose X",        estimatedPose.getX());
+    SmartDashboard.putNumber("Vision/Pose Y",        estimatedPose.getY());
+    SmartDashboard.putNumber("Vision/Pose Rotation", estimatedPose.getRotation().getDegrees());
+    SmartDashboard.putNumber("Vision/Timestamp",     mt2.timestampSeconds);
+    SmartDashboard.putNumber("Vision/Avg Tag Dist",  mt2.avgTagDist);
+
+    // Apply vision measurement
+    swerveDrive.setVisionMeasurementStdDevs(VecBuilder.fill(.7, .7, 9999999));
+    swerveDrive.addVisionMeasurement(estimatedPose, mt2.timestampSeconds);
+
+    SmartDashboard.putString("Vision/Reject Reason",      "None");
+    SmartDashboard.putBoolean("Vision/Measurement Applied", true);
+    SmartDashboard.putNumber("Vision/Updates This Match",
+        SmartDashboard.getNumber("Vision/Updates This Match", 0) + 1);
 }
+
+}
+

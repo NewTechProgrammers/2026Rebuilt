@@ -31,6 +31,10 @@ public class IntakeDrop extends SubsystemBase {
         intakeMotor.set(IntakeDropConstants.kPercentOutputIntakeDrop); 
     }
 
+    public void close() {
+        intakeMotor.set(-IntakeDropConstants.kPercentOutputIntakeDrop);
+    }
+
     public void stop() {
         intakeMotor.set(0);
     }
