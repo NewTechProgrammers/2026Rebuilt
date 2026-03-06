@@ -1,6 +1,7 @@
 package frc.robot.subsystems;
 
 import com.revrobotics.PersistMode;
+import com.revrobotics.RelativeEncoder;
 import com.revrobotics.ResetMode;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
@@ -10,6 +11,7 @@ import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import frc.robot.Constants.IntakeConstants;
 import frc.robot.Constants.ShootingConstants;
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class Shooting extends SubsystemBase {
@@ -17,6 +19,8 @@ public class Shooting extends SubsystemBase {
     private final SparkMax sortingMotor = new SparkMax(ShootingConstants.kSortingSparkMaxPort, MotorType.kBrushless);
     private final SparkMax passthroughMotor = new SparkMax(ShootingConstants.kPassthroughSparkMaxPort, MotorType.kBrushless);
     private final SparkMax shooterMotor = new SparkMax(ShootingConstants.kShooterSparkMaxPort, MotorType.kBrushless);
+
+    private final RelativeEncoder shooterEncoder = shooterMotor.getEncoder();
 
     // Motor configurations
     private final SparkMaxConfig sortingMotorConfig = new SparkMaxConfig();
@@ -45,10 +49,23 @@ public class Shooting extends SubsystemBase {
     @Override
     public void periodic() {
         shooterMotor.set(rateLimiter.calculate(shooterTargetSpeed));
-        if (shooterMotor.get() == ShootingConstants.kPercentOutputShooter && shooterTargetSpeed == ShootingConstants.kPercentOutputShooter) {
+        if (shooterMotor.get() <= ShootingConstants.kPercentOutputShooter && shooterTargetSpeed <= ShootingConstants.kPercentOutputShooter) {
             sortingMotor.set(ShootingConstants.kPercentOutputSorting);
             passthroughMotor.set(ShootingConstants.kPercentOutputPassthrough);
         }
+
+        // Log the current value
+        SmartDashboard.putNumber("Shooter velocity: ", shooterEncoder.getVelocity());
+        // If the shooter motor is too slow, we speed it up
+        if (shooterMotor.getEncoder().getVelocity() > ShootingConstants.kShooterMinimumVelocity) {
+            if (shooterMotor.get() <= ShootingConstants.kPercentOutputShooter && shooterTargetSpeed <= ShootingConstants.kPercentOutputShooter) {
+                if (shooterTargetSpeed < 1.0) {
+                    shooterTargetSpeed += 0.01;
+                }
+                System.err.println("Increasing shooter speed to: " + shooterTargetSpeed);
+            }
+        }
+
     }
 
     public void sortAndPass() {
