@@ -53,19 +53,6 @@ public class Shooting extends SubsystemBase {
             sortingMotor.set(ShootingConstants.kPercentOutputSorting);
             passthroughMotor.set(ShootingConstants.kPercentOutputPassthrough);
         }
-
-        // Log the current value
-        SmartDashboard.putNumber("Shooter velocity: ", shooterEncoder.getVelocity());
-        // If the shooter motor is too slow, we speed it up
-        if (shooterMotor.getEncoder().getVelocity() > ShootingConstants.kShooterMinimumVelocity) {
-            if (shooterMotor.get() <= ShootingConstants.kPercentOutputShooter && shooterTargetSpeed <= ShootingConstants.kPercentOutputShooter) {
-                if (shooterTargetSpeed < 1.0) {
-                    shooterTargetSpeed += 0.01;
-                }
-                System.err.println("Increasing shooter speed to: " + shooterTargetSpeed);
-            }
-        }
-
     }
 
     public void sortAndPass() {
