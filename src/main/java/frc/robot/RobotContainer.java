@@ -4,11 +4,11 @@
 
 package frc.robot;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants.OperatorConstants;
 
 import frc.robot.commands_timed.modules.intake.*;
@@ -30,6 +30,7 @@ import frc.robot.subsystems.swervedrive.SwerveSubsystem;
 import swervelib.SwerveInputStream;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.function.DoubleSupplier;
@@ -39,12 +40,8 @@ import frc.robot.subsystems.intake.IntakeDrop;
 import frc.robot.subsystems.Shooting;
 import frc.robot.subsystems.Vision.Aim;
 
-import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
-import com.pathplanner.lib.path.GoalEndState;
-import com.pathplanner.lib.path.PathConstraints;
-import com.pathplanner.lib.path.PathPlannerPath;
-import com.pathplanner.lib.path.Waypoint;
+import com.pathplanner.lib.commands.PathPlannerAuto;
 
 /*
  * This class is where the bulk of the robot should be declared.  Since Command-based is a
@@ -55,6 +52,9 @@ import com.pathplanner.lib.path.Waypoint;
 public class RobotContainer {
         // Create a list of waypoints from poses. Each pose represents one waypoint.
         // The rotation component of the pose should be the direction of travel. Do not use holonomic rotation.
+        private final SendableChooser<Command> autoChooser = new SendableChooser<>();
+        private final Command doNothingAuto = Commands.none();
+        private final String defaultAutoName;
 
         
         final CommandXboxController driverXbox = new CommandXboxController(OperatorConstants.kDriverControllerPort);
@@ -105,6 +105,12 @@ public class RobotContainer {
                 NamedCommands.registerCommand("SortAndPass", new SortAndPassTimed(shooting, 2.0));
                 NamedCommands.registerCommand("IntakeOn", new IntakeOnCommandTimed(intake, 2.0));
                 NamedCommands.registerCommand("IntakeDrop", new IntakeDropCommandTimed(intakeDrop, 2.0));
+
+                defaultAutoName = configureAutoChooser();
+                SmartDashboard.putData("Select Autonomous", autoChooser);
+                SmartDashboard.putData("Auto choices", autoChooser);
+                SmartDashboard.putData("Autonomous Mode", autoChooser);
+                SmartDashboard.putData("Autonomous", autoChooser);
         }
 
         /**
@@ -157,37 +163,118 @@ public class RobotContainer {
                 drivebase.setMotorBrake(brake);
         }
 
-          public Command getAutonomousCommand() {
+        private String configureAutoChooser() {
+                List<String> autoNames = discoverAutoNames();
+                autoChooser.setDefaultOption("Do Nothing", doNothingAuto);
 
-                try{
-                        // Load the path you want to follow using its name in the GUI
-                        // Create a list of waypoints from poses. Each pose represents one waypoint.
-                        // The rotation component of the pose should be the direction of travel. Do not use holonomic rotation.
-                        List<Waypoint> waypoints = PathPlannerPath.waypointsFromPoses(
-                                new Pose2d(0.0, 0.0, Rotation2d.fromDegrees(0)),
-                                new Pose2d(1.0, 0.0, Rotation2d.fromDegrees(0)),
-                                new Pose2d(1.0, 1.0, Rotation2d.fromDegrees(0))
-                        );
-
-                        PathConstraints constraints = new PathConstraints(1.0, 0.5, 2 * Math.PI, 4 * Math.PI); // The constraints for this path.
-                        // PathConstraints constraints = PathConstraints.unlimitedConstraints(12.0); // You can also use unlimited constraints, only limited by motor torque and nominal battery voltage
-
-                        // Create the path using the waypoints created above
-                        PathPlannerPath path = new PathPlannerPath(
-                                waypoints,
-                                constraints,
-                                null, // The ideal starting state, this is only relevant for pre-planned paths, so can be null for on-the-fly paths.
-                                new GoalEndState(0.0, Rotation2d.fromDegrees(0)) // Goal end state. You can set a holonomic rotation here. If using a differential drivetrain, the rotation will have no effect.
-                        );
-
-                        // Prevent the path from being flipped if the coordinates are already correct
-                        path.preventFlipping = true;
-
-                        // Create a path following command using AutoBuilder. This will also trigger event markers.
-                        return AutoBuilder.followPath(path);
-                } catch (Exception e) {
-                        DriverStation.reportError("Big oops: " + e.getMessage(), e.getStackTrace());
-                        return Commands.none();
+                if (autoNames.isEmpty()) {
+                        SmartDashboard.putStringArray("Auto List", new String[] { "Do Nothing" });
+                        SmartDashboard.putString("Auto Selector", "Do Nothing");
+                        SmartDashboard.putString("Auto Chooser Status", "No autos found in deploy/pathplanner/autos");
+                        return "";
                 }
+
+                String chosenDefault = pickDefaultAuto(autoNames);
+                int loadedAutos = 0;
+
+                for (String autoName : autoNames) {
+                        Command autoCommand = loadAutoCommandByName(autoName);
+                        if (autoCommand == null) {
+                                continue;
+                        }
+
+                        loadedAutos++;
+                        if (autoName.equals(chosenDefault)) {
+                                autoChooser.setDefaultOption(autoName + " (Default)", autoCommand);
+                        } else {
+                                autoChooser.addOption(autoName, autoCommand);
+                        }
+                }
+
+                SmartDashboard.putStringArray("Auto List", autoNames.toArray(String[]::new));
+                SmartDashboard.putString("Auto Selector", chosenDefault);
+                SmartDashboard.putString("Auto Chooser Default", chosenDefault);
+                SmartDashboard.putString("Auto Chooser Status", "Loaded " + loadedAutos + " autos");
+                return chosenDefault;
+        }
+
+        private List<String> discoverAutoNames() {
+                File autosDirectory = new File(Filesystem.getDeployDirectory(), "pathplanner/autos");
+                File[] autoFiles = autosDirectory.listFiles((directory, fileName) -> fileName.endsWith(".auto"));
+                if (autoFiles == null || autoFiles.length == 0) {
+                        return List.of();
+                }
+
+                return Arrays.stream(autoFiles)
+                                .map(File::getName)
+                                .map(fileName -> fileName.substring(0, fileName.length() - ".auto".length()))
+                                .sorted(String.CASE_INSENSITIVE_ORDER)
+                                .toList();
+        }
+
+        private String pickDefaultAuto(List<String> autoNames) {
+                var alliance = DriverStation.getAlliance();
+                if (alliance.isPresent()) {
+                        String allianceDefault = alliance.get() == DriverStation.Alliance.Red ? "Red middle" : "Blue middle";
+                        if (autoNames.contains(allianceDefault)) {
+                                return allianceDefault;
+                        }
+                }
+
+                if (autoNames.contains("Blue middle")) {
+                        return "Blue middle";
+                }
+                return autoNames.get(0);
+        }
+
+        private Command loadAutoCommandByName(String autoName) {
+                try {
+                        return new PathPlannerAuto(autoName);
+                } catch (Exception ex) {
+                        DriverStation.reportWarning("Skipping invalid auto '" + autoName + "'", ex.getStackTrace());
+                        return null;
+                }
+        }
+
+        private String getDashboardSelectedAutoName() {
+                String selectedByDashboard = SmartDashboard.getString("Auto Selector", defaultAutoName);
+                if (selectedByDashboard == null || selectedByDashboard.isBlank()) {
+                        return defaultAutoName;
+                }
+                return selectedByDashboard.trim();
+        }
+
+        private Command getFallbackAutoCommand() {
+                List<String> autoNames = discoverAutoNames();
+                if (autoNames.isEmpty()) {
+                        return doNothingAuto;
+                }
+
+                String fallbackName = pickDefaultAuto(autoNames);
+                Command fallbackCommand = loadAutoCommandByName(fallbackName);
+                return fallbackCommand != null ? fallbackCommand : doNothingAuto;
+        }
+
+        public Command getAutonomousCommand() {
+                String dashboardSelection = getDashboardSelectedAutoName();
+                if (dashboardSelection != null
+                                && !dashboardSelection.isBlank()
+                                && !"Do Nothing".equalsIgnoreCase(dashboardSelection)) {
+                        Command dashboardAuto = loadAutoCommandByName(dashboardSelection);
+                        if (dashboardAuto != null) {
+                                SmartDashboard.putString("Selected Auto", dashboardSelection + " (from Auto Selector)");
+                                return dashboardAuto;
+                        }
+                }
+
+                Command chooserAuto = autoChooser.getSelected();
+                if (chooserAuto != null) {
+                        SmartDashboard.putString("Selected Auto", chooserAuto.getName());
+                        return chooserAuto;
+                }
+
+                Command fallbackAuto = getFallbackAutoCommand();
+                SmartDashboard.putString("Selected Auto", fallbackAuto.getName());
+                return fallbackAuto;
         }
 }
