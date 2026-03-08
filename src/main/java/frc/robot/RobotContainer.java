@@ -116,12 +116,9 @@ public class RobotContainer {
 
 
         public SwerveSubsystem getSwerve() {
-    return drivebase;
-}
+                return drivebase;
+        }
 
-        public SwerveSubsystem getSwerve() {
-    return drivebase;
-}
         /**
          * Use this method to define your button->command mappings. Buttons can be
          * created by
