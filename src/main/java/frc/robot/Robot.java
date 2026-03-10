@@ -43,6 +43,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotInit() {
+    Constants.refresh();
     // Instantiate our RobotContainer. This will perform all our button bindings,
     // and put our
     // autonomous chooser on the dashboard.
@@ -69,6 +70,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotPeriodic() {
+    Constants.refresh();
     // Runs the Scheduler. This is responsible for polling buttons, adding
     // newly-scheduled
     // commands, running already-scheduled commands, removing finished or
