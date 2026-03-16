@@ -19,7 +19,8 @@ public class Intake extends SubsystemBase {
     private final SparkMaxConfig intakeMotorConfig = new SparkMaxConfig();
 
     // Smooth smmooooth
-    private final SlewRateLimiter rateLimiter = new SlewRateLimiter(IntakeConstants.kIntakeAccel);
+    private static double lastIntakeAccel = IntakeConstants.kIntakeAccel;
+    private static SlewRateLimiter rateLimiter = new SlewRateLimiter(IntakeConstants.kIntakeAccel);
     private double targetSpeed = 0.0;
 
     public Intake() {
@@ -43,5 +44,13 @@ public class Intake extends SubsystemBase {
 
     public void stop() {
         targetSpeed = 0.0;
+    }
+
+    public static void updateRateLimiter() {
+        if (lastIntakeAccel == IntakeConstants.kIntakeAccel) {
+            return;
+        }
+        lastIntakeAccel = IntakeConstants.kIntakeAccel;
+        rateLimiter = new SlewRateLimiter(IntakeConstants.kIntakeAccel);
     }
 }
