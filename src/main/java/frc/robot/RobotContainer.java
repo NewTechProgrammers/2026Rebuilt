@@ -73,12 +73,12 @@ public class RobotContainer {
          * by angular velocity.
          */
         SwerveInputStream driveAngularVelocity = SwerveInputStream.of(drivebase.getSwerveDrive(),
-                        () -> driverXbox.getLeftY() * 1,
-                        () -> driverXbox.getLeftX() * 1)
+                        () -> -driverXbox.getLeftY() * 1,
+                        () -> -driverXbox.getLeftX() * 1)
                         .withControllerRotationAxis(driverXboxRightXInverted)
                         .deadband(OperatorConstants.DEADBAND)
                         .scaleTranslation(0.8)
-                        .allianceRelativeControl(true);
+                        .allianceRelativeControl(false);
 
         /**
          * Clone's the angular velocity input stream and converts it to a fieldRelative
@@ -147,8 +147,8 @@ public class RobotContainer {
                 driverXbox.leftBumper().whileTrue(new IntakeReverseCommand(intake));
 
                 // Hold right trigger for intake drop
-                supportXbox.x().whileTrue(new IntakeDropCommand(intakeDrop));
-                supportXbox.povLeft().whileTrue(new IntakeDropCloseCommand(intakeDrop));
+                driverXbox.x().whileTrue(new IntakeDropCommand(intakeDrop));
+                driverXbox.povLeft().whileTrue(new IntakeDropCloseCommand(intakeDrop));
 
                 // Shooting command
                 supportXbox.b().whileTrue(new Shoot(shooting));
