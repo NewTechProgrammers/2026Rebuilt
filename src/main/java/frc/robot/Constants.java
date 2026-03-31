@@ -113,11 +113,11 @@ public final class Constants {
     // We will need to change these later
     public static double kPercentOutputSorting = -0.20;
     public static double kPercentOutputPassthrough = -0.45;
-    public static double kPercentOutputShooter = -0.65;
+    public static double kPercentOutputShooter = -0.70;
     // Distance (meters) where shooter uses exactly kPercentOutputShooter.
-    public static double kShooterReferenceDistanceMeters = 2.0;
+    public static double kShooterReferenceDistanceMeters = 2.5;
     // Additional shooter output applied per meter away from reference distance.
-    public static double kShooterPercentPerMeter = 0.25;
+    public static double kShooterPercentPerMeter = 0.20;
   }
 
   public static final class AutoConstants {
