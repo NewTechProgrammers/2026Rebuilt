@@ -67,7 +67,6 @@ public class RobotContainer {
         private final Intake intake = new Intake();
         private final IntakeDrop intakeDrop = new IntakeDrop();
         private final Shooting shooting = new Shooting();
-        private final Aim aim = new Aim();
         /**
          * Converts driver input into a field-relative ChassisSpeeds that is controlled
          * by angular velocity.

@@ -138,7 +138,7 @@ public class Robot extends TimedRobot {
     } else {
       CommandScheduler.getInstance().cancelAll();
     }
-    m_robotContainer.getSwerve().resetHasResetPose();
+    
   }
 
   /** This function is called periodically during operator control. */

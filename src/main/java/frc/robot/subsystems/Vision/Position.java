@@ -16,12 +16,6 @@ import swervelib.SwerveDrive;
 public class Position extends SubsystemBase {
     private final SwerveDrive swerveDrive;
 
-    private boolean hasResetPose = false;
-
-    public void resetHasResetPose() {
-        hasResetPose = false;
-    }
-
     public Position(SwerveDrive swerveDrive) {
         this.swerveDrive = swerveDrive;
     }
@@ -36,10 +30,8 @@ public void updateOdometryWithVision() {
     LimelightHelpers.PoseEstimate measurement;
 
     if (DriverStation.isDisabled()) {
-        // Gdy disabled — używaj MT1 do kalibracji pozycji
         measurement = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight");
     } else {
-        // Gdy enabled — używaj MT2
         measurement = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2("limelight");
     }
 
@@ -49,19 +41,16 @@ public void updateOdometryWithVision() {
     }
 
     if (!measurement.isMegaTag2) {
-        // MT1 — wymaga minimum 2 tagów
         if (measurement.tagCount < 2) {
             SmartDashboard.putString("Vision/Reject Reason", "MT1 needs 2 tags");
             return;
         }
-        // Reset pozycji gdy disabled
         if (DriverStation.isDisabled()) {
             swerveDrive.resetOdometry(measurement.pose);
             SmartDashboard.putString("Vision/Reject Reason", "None - MT1 reset");
             return;
         }
     } else {
-        // MT2 — odrzuć gdy za szybko się obraca
         if (Math.abs(swerveDrive.getRobotVelocity().omegaRadiansPerSecond) > 360 * (Math.PI / 180)) {
             SmartDashboard.putString("Vision/Reject Reason", "Rotating too fast");
             return;

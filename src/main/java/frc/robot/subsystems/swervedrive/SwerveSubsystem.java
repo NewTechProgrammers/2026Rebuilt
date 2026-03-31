@@ -316,9 +316,7 @@ public class SwerveSubsystem extends SubsystemBase {
         swerveDrive.setMotorIdleMode(brake);
     }
 
-public void resetHasResetPose() {
-    position.resetHasResetPose();
-}
+
 
     /**
      * Gets the current pose (position and rotation) of the robot, as reported by odometry.
