@@ -279,6 +279,40 @@ public class SwerveSubsystem extends SubsystemBase {
             swerveDrive.getMaximumChassisAngularVelocity());
     }
 
+    private Rotation2d savedTargetRotation = null;
+    
+    public void saveTowerHeading() {
+        Pose2d targetPose = aim.findPoseForShoot();
+        if (targetPose != null) {
+            savedTargetRotation = targetPose.getRotation();
+        } else {
+            savedTargetRotation = null;
+        }
+    }
+
+    public void faceSavedTarget() {
+        if (savedTargetRotation == null) {
+            swerveDrive.drive(new Translation2d(), 0, true, false);
+            return;
+        }
+
+        double headingErrorRadians = savedTargetRotation.minus(getPose().getRotation()).getRadians();
+        double angularVelocity = MathUtil.clamp(
+            headingErrorRadians * Constants.OperatorConstants.TURN_CONSTANT,
+            -swerveDrive.getMaximumChassisAngularVelocity(),
+            swerveDrive.getMaximumChassisAngularVelocity());
+
+        swerveDrive.drive(new Translation2d(), angularVelocity, true, false);
+    }
+
+    public boolean isFacingSavedTarget() {
+        if (savedTargetRotation == null) {
+            return true;
+        }
+        double error = Math.abs(savedTargetRotation.minus(getPose().getRotation()).getDegrees());
+        return error < 3.0;
+    }
+
     /**
      * Drive the robot given a chassis field oriented velocity.
      *

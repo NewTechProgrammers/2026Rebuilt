@@ -18,8 +18,11 @@ public class Aim extends SubsystemBase {
 
     private final AprilTagFieldLayout fieldLayout;
 
-    private static final Set<Integer> BLUE_REEF_TAGS = Set.of(18, 19, 20, 21, 24, 25, 26, 27);
-    private static final Set<Integer> RED_REEF_TAGS  = Set.of(2, 3, 4, 5, 8, 9, 10, 11);
+    private static final Set<Integer> BLUE_CENTER_TAGS = Set.of(24, 26, 27);
+    private static final Set<Integer> RED_CENTER_TAGS  = Set.of(8, 10, 11);
+
+    private static final Set<Integer> BLUE_VALID_TAGS  = Set.of(18, 21, 24, 25, 26, 27);
+    private static final Set<Integer> RED_VALID_TAGS   = Set.of(2, 5, 8, 9, 10, 11);
 
     public Aim() {
         fieldLayout = MyFieldLayouts.createRebuilt2026Layout();
@@ -29,9 +32,17 @@ public class Aim extends SubsystemBase {
         Optional<DriverStation.Alliance> alliance = DriverStation.getAlliance();
         if (alliance.isEmpty()) {
             System.out.println("[AIM] Alliance not set! Defaulting to Blue.");
-            return BLUE_REEF_TAGS;
+            return BLUE_VALID_TAGS;
         }
-        return alliance.get() == DriverStation.Alliance.Red ? RED_REEF_TAGS : BLUE_REEF_TAGS;
+        return alliance.get() == DriverStation.Alliance.Red ? RED_VALID_TAGS : BLUE_VALID_TAGS;
+    }
+
+    private Set<Integer> getCenterTags() {
+        Optional<DriverStation.Alliance> alliance = DriverStation.getAlliance();
+        if (alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red) {
+            return RED_CENTER_TAGS;
+        }
+        return BLUE_CENTER_TAGS;
     }
 
     public Pose2d findPoseForShoot() {
@@ -50,12 +61,25 @@ public class Aim extends SubsystemBase {
         }
 
         Set<Integer> validTags = getTargetTags();
+        Set<Integer> centerTags = getCenterTags();
 
         LimelightHelpers.RawFiducial targetFiducial = null;
+        
+        // Priority 1: Center Tag
         for (LimelightHelpers.RawFiducial fiducial : mt2.rawFiducials) {
-            if (validTags.contains(fiducial.id)) {
+            if (centerTags.contains(fiducial.id)) {
                 targetFiducial = fiducial;
                 break;
+            }
+        }
+
+        // Priority 2: Any valid tag if center is missing
+        if (targetFiducial == null) {
+            for (LimelightHelpers.RawFiducial fiducial : mt2.rawFiducials) {
+                if (validTags.contains(fiducial.id)) {
+                    targetFiducial = fiducial;
+                    break;
+                }
             }
         }
 
@@ -103,7 +127,7 @@ public class Aim extends SubsystemBase {
 
         // Rotation facing toward the tag
         Rotation2d targetRotation = new Rotation2d(toTag.getX(), toTag.getY());
-
+        
         Pose2d shootingPose = new Pose2d(targetTranslation, targetRotation);
 
         System.out.println("[AIM] Distance to tag: " + distToTag

@@ -77,7 +77,7 @@ public class RobotContainer {
                         .withControllerRotationAxis(driverXboxRightXInverted)
                         .deadband(OperatorConstants.DEADBAND)
                         .scaleTranslation(0.8)
-                        .allianceRelativeControl(false);
+                        .allianceRelativeControl(true);
 
         /**
          * Clone's the angular velocity input stream and converts it to a fieldRelative
@@ -135,7 +135,7 @@ public class RobotContainer {
                 drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
 
                 // Zero gyroscope
-                driverXbox.a().onTrue((Commands.runOnce(drivebase::zeroGyro)));
+                driverXbox.a().onTrue(Commands.runOnce(drivebase::zeroGyro));
 
                 // Placeholders
                 driverXbox.start().whileTrue(Commands.none());
@@ -150,17 +150,20 @@ public class RobotContainer {
                 driverXbox.x().whileTrue(new IntakeDropCommand(intakeDrop));
                 driverXbox.povLeft().whileTrue(new IntakeDropCloseCommand(intakeDrop));
 
-                // Shooting command with driver translation + automatic tower facing
+                // Shooting command: first faces the basket, then calculates speed and shoots, no translation
                 driverXbox.b().onTrue(Commands.runOnce(drivebase::cancelAimAndDrive));
                 driverXbox.b().whileTrue(
-                        Commands.runEnd(
-                                () -> {
-                                        shooting.startShooting();
-                                        drivebase.driveAndFaceTower(-driverXbox.getLeftY(), -driverXbox.getLeftX());
-                                },
-                                shooting::stop,
-                                shooting,
-                                drivebase));
+                        Commands.sequence(
+                                Commands.runOnce(() -> drivebase.saveTowerHeading()),
+                                Commands.run(() -> drivebase.faceSavedTarget(), drivebase)
+                                        .until(drivebase::isFacingSavedTarget),
+                                Commands.runOnce(() -> shooting.startShooting(), shooting),
+                                Commands.runEnd(
+                                        () -> drivebase.faceSavedTarget(),
+                                        () -> shooting.stop(),
+                                        drivebase, shooting)
+                        )
+                );
                 driverXbox.povLeft().whileTrue(new IntakeDropCloseCommand(intakeDrop));
 
                 // Shooting commands without shooting (pov = dpad btw)
