@@ -18,8 +18,11 @@ import java.util.Set;
 
 public class Shooting extends SubsystemBase {
     private static final String LIMELIGHT_NAME = "limelight";
-    private static final Set<Integer> BLUE_BASKET_TAGS = Set.of(18, 19, 20, 21, 24, 25, 26, 27);
-    private static final Set<Integer> RED_BASKET_TAGS = Set.of(2, 3, 4, 5, 8, 9, 10, 11);
+    private static final Set<Integer> BLUE_CENTER_TAGS = Set.of(24, 26, 27);
+    private static final Set<Integer> RED_CENTER_TAGS  = Set.of(8, 10, 11);
+
+    private static final Set<Integer> BLUE_VALID_TAGS  = Set.of(18, 21, 24, 25, 26, 27);
+    private static final Set<Integer> RED_VALID_TAGS   = Set.of(2, 5, 8, 9, 10, 11);
 
     private final SparkMax sortingMotor = new SparkMax(ShootingConstants.kSortingSparkMaxPort, MotorType.kBrushless);
     private final SparkMax passthroughMotor = new SparkMax(ShootingConstants.kPassthroughSparkMaxPort, MotorType.kBrushless);
@@ -103,9 +106,17 @@ public class Shooting extends SubsystemBase {
     private Set<Integer> getTargetTags() {
         var alliance = DriverStation.getAlliance();
         if (alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red) {
-            return RED_BASKET_TAGS;
+            return RED_VALID_TAGS;
         }
-        return BLUE_BASKET_TAGS;
+        return BLUE_VALID_TAGS;
+    }
+
+    private Set<Integer> getCenterTags() {
+        var alliance = DriverStation.getAlliance();
+        if (alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red) {
+            return RED_CENTER_TAGS;
+        }
+        return BLUE_CENTER_TAGS;
     }
 
     private double getShooterSpeedFromLiveTagDistance() {
@@ -139,6 +150,25 @@ public class Shooting extends SubsystemBase {
 
         double closestDistance = Double.POSITIVE_INFINITY;
         Set<Integer> targetTags = getTargetTags();
+        Set<Integer> centerTags = getCenterTags();
+
+        // Priority 1: Distance to the exact center tag
+        for (LimelightHelpers.RawFiducial fiducial : mt2.rawFiducials) {
+            if (centerTags.contains(fiducial.id)) {
+                double measuredDistance = fiducial.distToRobot > 0.0 ? fiducial.distToRobot : fiducial.distToCamera;
+                if (measuredDistance > 0.0) {
+                    if (measuredDistance < closestDistance) {
+                        closestDistance = measuredDistance;
+                    }
+                }
+            }
+        }
+        
+        if (Double.isFinite(closestDistance)) {
+            return closestDistance;
+        }
+
+        // Priority 2: Closest of the other valid tags
         for (LimelightHelpers.RawFiducial fiducial : mt2.rawFiducials) {
             if (!targetTags.contains(fiducial.id)) {
                 continue;
