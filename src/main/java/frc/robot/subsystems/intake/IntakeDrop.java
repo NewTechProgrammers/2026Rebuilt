@@ -8,6 +8,7 @@ import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 
 import frc.robot.Constants.IntakeDropConstants;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class IntakeDrop extends SubsystemBase {
@@ -17,17 +18,24 @@ public class IntakeDrop extends SubsystemBase {
     // Motor configurations
     private final SparkMaxConfig intakeMotorConfig = new SparkMaxConfig();
 
-
+    DigitalInput intakeDropLimitSwitch = new DigitalInput(IntakeDropConstants.kIntakeDropLimitSwitchPort);
 
     public IntakeDrop() {
         intakeMotorConfig.inverted(true).idleMode(IdleMode.kBrake);
         intakeMotor.configure(intakeMotorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     }
 
-
+    public boolean isBottomLimitSwitchPressed() {
+        return !intakeDropLimitSwitch.get();
+    }
 
     public void start() {
-        intakeMotor.set(IntakeDropConstants.kPercentOutputIntakeDrop); 
+        if (isBottomLimitSwitchPressed()) {
+            stop();
+        } else {
+           intakeMotor.set(-IntakeDropConstants.kPercentOutputIntakeDrop);
+        }
+         
     }
 
     public void close() {
