@@ -104,9 +104,9 @@ public class RobotContainer {
                 // Configure the trigger bindings
                 configureBindings();
                 DriverStation.silenceJoystickConnectionWarning(true);
-                NamedCommands.registerCommand("Shoot", new AimAndShoot(drivebase, shooting).withTimeout(2.0));
+                NamedCommands.registerCommand("Shoot", new AimAndShoot(drivebase, shooting).withTimeout(7.0));
                 NamedCommands.registerCommand("SortAndPass", new SortAndPassTimed(shooting, 2.0));
-                NamedCommands.registerCommand("IntakeOn", new IntakeOnCommandTimed(intake, 2.0));
+                NamedCommands.registerCommand("IntakeOn", new IntakeOnCommandTimed(intake, 3.0));
                 NamedCommands.registerCommand("IntakeDrop", new IntakeDropCommandTimed(intakeDrop, 2.0));
 
                 defaultAutoName = configureAutoChooser();
